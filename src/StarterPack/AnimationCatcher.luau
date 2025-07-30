@@ -33,6 +33,7 @@ tool.Activated:Connect(function()
 
 		nextActivate = os.clock() + debounceTime
 		animationTrack:Play()
+		script.Swing:Play()
 	end
 end)
 

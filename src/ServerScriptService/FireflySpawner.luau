@@ -1,7 +1,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local FireflyClass = require(ReplicatedStorage:WaitForChild("FireflyClass"))
 
 local fireflyTemplate = ReplicatedStorage:WaitForChild("FireflyModel")
+
+local pauseEvent = ReplicatedStorage:WaitForChild("Pause")
+local resetEvent = ReplicatedStorage:WaitForChild("Reset")
+local rainRemoteEvent = ReplicatedStorage:WaitForChild("RainRemote")
+
 local fireflyFolder = workspace:WaitForChild("FireflyFolder")
 local spawnBounds = workspace:WaitForChild("FireflyBounds")
 local displayFireflyCounter = workspace.Map.Lamps:WaitForChild("FireflyCounterLamp")
@@ -20,15 +26,48 @@ local function getRandomPositionInBounds(part)
 	return Vector3.new(x, y, z) + pos
 end
 
-for i = 1, NUM_FIREFLIES do
-	local firefly = fireflyTemplate:Clone()
-	firefly.Parent = fireflyFolder
+local fireflyInstances = {}
 
-	local spawnPosition = getRandomPositionInBounds(spawnBounds)
-	firefly:PivotTo(CFrame.new(spawnPosition))
+local function spawnAllFireflies()
+	for i = 1, NUM_FIREFLIES do
+		local firefly = fireflyTemplate:Clone()
+		firefly.Parent = fireflyFolder
 
-	FireflyClass.new(firefly)
+		local spawnPosition = getRandomPositionInBounds(spawnBounds)
+		firefly:PivotTo(CFrame.new(spawnPosition))
+
+		local instance = FireflyClass.new(firefly)
+		table.insert(fireflyInstances, instance)
+	end
 end
+
+spawnAllFireflies()
+
+pauseEvent.OnServerEvent:Connect(function(player)
+	for _, instance in ipairs(fireflyInstances) do
+		if instance.model then
+			instance.model:SetAttribute("Paused", not instance.model:GetAttribute("Paused"))
+		end
+	end
+end)
+
+resetEvent.OnServerEvent:Connect(function(player)
+	for _, instance in ipairs(fireflyInstances) do
+		instance:Destroy()
+	end
+	
+	fireflyInstances = {}
+
+	spawnAllFireflies()
+end)
+
+rainRemoteEvent.OnServerEvent:Connect(function(player, isRaining)
+	for _, firefly in ipairs(workspace.FireflyFolder:GetChildren()) do
+		if firefly:IsA("Model") then
+			firefly:SetAttribute("Rain", isRaining)
+		end
+	end
+end)
 
 while true do
 	task.wait(0.1)

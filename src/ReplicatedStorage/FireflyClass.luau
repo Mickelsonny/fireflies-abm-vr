@@ -51,6 +51,7 @@ function FireflyClass.new(model)
 
 	self.model = model
 	self.root = model.PrimaryPart
+	self.root.Buzzing:Play()
 
 	if not self.root then
 		warn("Firefly missing PrimaryPart!")
@@ -210,6 +211,14 @@ function FireflyClass:_initBlink()
 				self.kuramotoConnection:Disconnect()
 			end
 			return
+		end
+		
+		if self.model:GetAttribute("Paused") then
+			return -- skip blinking while paused
+		end
+		
+		if self.model:GetAttribute("Rain") then
+			return -- skip blinking while it's raining
 		end
 
 		-- update phase using Kuramoto model
