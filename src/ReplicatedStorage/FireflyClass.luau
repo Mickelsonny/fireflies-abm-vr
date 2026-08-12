@@ -178,7 +178,7 @@ end
 
 function FireflyClass:_updateKuramotoPhase(dt)
 	-- get neighboring fireflies within influence range
-	local neighbors = self:_getNeighboringFireflies(70) -- influence radius
+	local neighbors = self:_getNeighboringFireflies(120) -- influence radius
 
 	-- calculate phase derivative using Kuramoto model
 	local phaseDot = self.naturalFrequency * 2 * math.pi -- convert Hz to rad/s

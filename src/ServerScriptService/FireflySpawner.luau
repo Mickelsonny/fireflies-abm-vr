@@ -69,16 +69,29 @@ rainRemoteEvent.OnServerEvent:Connect(function(player, isRaining)
 	end
 end)
 
+local startTime = os.clock()
+local sampleInterval = 3
+local nextSample = 0
+
 while true do
 	task.wait(0.1)
-
+	
 	local litCount = 0
 	for _, firefly in ipairs(fireflyFolder:GetChildren()) do
 		if firefly:IsA("Model") and firefly:GetAttribute("LitUp") == true then
 			litCount += 1
 		end
 	end
+	
+	local darkCount = NUM_FIREFLIES - litCount
 
 	billboardGui.FirefliesLitUp.Text = "Lit Fireflies: " .. litCount
-	billboardGui.FirefliesDark.Text = "Dark Fireflies: " .. NUM_FIREFLIES - litCount
+	billboardGui.FirefliesDark.Text = "Dark Fireflies: " .. darkCount
+
+	local elapsed = os.clock() - startTime
+	if elapsed >= nextSample then
+		local percentSynced = (math.max(litCount, darkCount) / NUM_FIREFLIES) * 100
+		print(string.format("%.1f & %d & %d & %.1f\\%% \\\\", elapsed, litCount, darkCount, percentSynced))
+		nextSample += sampleInterval
+	end
 end
