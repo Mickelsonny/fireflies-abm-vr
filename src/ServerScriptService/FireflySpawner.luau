@@ -41,6 +41,14 @@ local function spawnAllFireflies()
 	end
 end
 
+local function resetFireflies()
+	for _, instance in ipairs(fireflyInstances) do
+		instance:Destroy()
+	end
+	fireflyInstances = {}
+	spawnAllFireflies()
+end
+
 spawnAllFireflies()
 
 pauseEvent.OnServerEvent:Connect(function(player)
@@ -52,13 +60,7 @@ pauseEvent.OnServerEvent:Connect(function(player)
 end)
 
 resetEvent.OnServerEvent:Connect(function(player)
-	for _, instance in ipairs(fireflyInstances) do
-		instance:Destroy()
-	end
-	
-	fireflyInstances = {}
-
-	spawnAllFireflies()
+	resetFireflies()
 end)
 
 rainRemoteEvent.OnServerEvent:Connect(function(player, isRaining)
@@ -69,29 +71,69 @@ rainRemoteEvent.OnServerEvent:Connect(function(player, isRaining)
 	end
 end)
 
-local startTime = os.clock()
-local sampleInterval = 3
-local nextSample = 0
+-- Simulation runs:
+local NUM_TRIALS = 30
+local TRIAL_DURATION = 20
+local sampleInterval = 1
+local NUM_SAMPLES = (TRIAL_DURATION / sampleInterval) + 1
 
-while true do
-	task.wait(0.1)
-	
-	local litCount = 0
-	for _, firefly in ipairs(fireflyFolder:GetChildren()) do
-		if firefly:IsA("Model") and firefly:GetAttribute("LitUp") == true then
-			litCount += 1
-		end
-	end
-	
-	local darkCount = NUM_FIREFLIES - litCount
-
-	billboardGui.FirefliesLitUp.Text = "Lit Fireflies: " .. litCount
-	billboardGui.FirefliesDark.Text = "Dark Fireflies: " .. darkCount
-
-	local elapsed = os.clock() - startTime
-	if elapsed >= nextSample then
-		local percentSynced = (math.max(litCount, darkCount) / NUM_FIREFLIES) * 100
-		print(string.format("%.1f & %d & %d & %.1f\\%% \\\\", elapsed, litCount, darkCount, percentSynced))
-		nextSample += sampleInterval
-	end
+local results = {}
+for i = 1, NUM_SAMPLES do
+	results[i] = {}
 end
+
+task.spawn(function()
+	for trial = 1, NUM_TRIALS do
+		resetFireflies()
+		
+		task.wait(1)
+
+		local startTime = os.clock()
+		local nextSample = 0
+		local sampleIndex = 0
+
+		while os.clock() - startTime <= TRIAL_DURATION do
+			task.wait(0.1)
+
+			local litCount = 0
+			for _, firefly in ipairs(fireflyFolder:GetChildren()) do
+				if firefly:IsA("Model") and firefly:GetAttribute("LitUp") == true then
+					litCount += 1
+				end
+			end
+			
+			local darkCount = NUM_FIREFLIES - litCount
+			billboardGui.FirefliesLitUp.Text = "Lit Fireflies: " .. litCount
+			billboardGui.FirefliesDark.Text = "Dark Fireflies: " .. darkCount
+
+			local elapsed = os.clock() - startTime
+			if elapsed >= nextSample then
+				sampleIndex += 1
+				local R = FireflyClass.GetOrderParameter()
+				results[sampleIndex][trial] = R
+				nextSample += sampleInterval
+			end
+		end
+
+		print(string.format("Trial %d/%d complete", trial, NUM_TRIALS))
+	end
+
+	print("======= BEGIN =======")
+
+	local header = {"time"}
+	for trial = 1, NUM_TRIALS do
+		table.insert(header, "trial_" .. trial)
+	end
+	print(table.concat(header, ","))
+
+	for i = 1, NUM_SAMPLES do
+		local row = {tostring((i - 1) * sampleInterval)}
+		for trial = 1, NUM_TRIALS do
+			local R = results[i][trial]
+			table.insert(row, R and string.format("%.4f", R) or "")
+		end
+		print(table.concat(row, ","))
+	end
+
+	print("======= END =======")
+end)

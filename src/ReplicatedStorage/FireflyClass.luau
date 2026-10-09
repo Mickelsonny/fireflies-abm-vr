@@ -97,6 +97,31 @@ function FireflyClass.new(model)
 	return self
 end
 
+-- Kuramoto order parameter: Z(t) = R(t)*e^(i*phi(t)) = (1/N) * sum(e^(i*theta_j(t)))
+function FireflyClass.GetOrderParameter()
+	local sumCos, sumSin, n = 0, 0, 0
+
+	for _, firefly in ipairs(AllFireflies) do
+		if firefly.root and firefly.root.Parent then
+			sumCos = sumCos + math.cos(firefly.phase)
+			sumSin = sumSin + math.sin(firefly.phase)
+			n = n + 1
+		end
+	end
+
+	if n == 0 then
+		return 0, 0, 0
+	end
+
+	local realPart = sumCos / n
+	local imagPart = sumSin / n
+
+	local R = math.sqrt(realPart^2 + imagPart^2)
+	local phi = math.atan2(imagPart, realPart)
+
+	return R, phi, n
+end
+
 function FireflyClass:_startMovement()
 	self.connection = RunService.Heartbeat:Connect(function(dt)
 		if not self.root then 
