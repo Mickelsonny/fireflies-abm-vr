@@ -71,8 +71,8 @@ rainRemoteEvent.OnServerEvent:Connect(function(player, isRaining)
 	end
 end)
 
--- Simulation runs:
-local NUM_TRIALS = 30
+-- Simulation runs for data collection:
+--[[local NUM_TRIALS = 30
 local TRIAL_DURATION = 20
 local sampleInterval = 1
 local NUM_SAMPLES = (TRIAL_DURATION / sampleInterval) + 1
@@ -136,4 +136,20 @@ task.spawn(function()
 	end
 
 	print("======= END =======")
-end)
+end)]]
+
+-- Original lit/dark firefly counter
+while true do
+	task.wait(0.1)
+
+	local litCount = 0
+	for _, firefly in ipairs(fireflyFolder:GetChildren()) do
+		if firefly:IsA("Model") and firefly:GetAttribute("LitUp") == true then
+			litCount += 1
+		end
+	end
+
+	local darkCount = NUM_FIREFLIES - litCount
+	billboardGui.FirefliesLitUp.Text = "Lit Fireflies: " .. litCount
+	billboardGui.FirefliesDark.Text = "Dark Fireflies: " .. darkCount
+end
